@@ -1,0 +1,192 @@
+﻿@page "/"
+@using System.IO
+@inject IWebHostEnvironment Env
+
+<PageTitle>Home</PageTitle>
+
+<link href="css/site.css" rel="stylesheet" />
+
+<div class="form-container">
+    <h3 class="form-title">Batch File Generator</h3>
+
+    <div class="form-grid">
+        <label>
+            <span>Start Number (8 digits)</span>
+            <InputText @bind-Value="StartNumberText" class="form-input" />
+        </label>
+
+        <label>
+            <span>Quantity</span>
+            <InputText @bind-Value="QuantityText" class="form-input" />
+        </label>
+
+        <label>
+            <span>Letter Type</span>
+            <InputSelect @bind-Value="LetterType" class="form-input">
+                <option disabled selected value="">-- Select Type --</option>
+                <option>Adult</option>
+                <option>Child</option>
+                <option>Maxi</option>
+                <option>Diplomatic</option>
+                <option>Official</option>
+                <option>Travel</option>
+                <option>Refugee</option>
+                <option>COC</option>
+                <option>COP</option>
+            </InputSelect>
+        </label>
+
+        <button @onclick="GenerateFiles" class="form-button">Generate</button>
+
+        @if (!string.IsNullOrEmpty(StatusMessage))
+        {
+            <div class="status-message">@StatusMessage</div>
+        }
+    </div>
+</div>
+
+@code {
+    string StartNumberText = "";
+    string QuantityText = "";
+    string LetterType = "";
+    string StatusMessage = "";
+
+    async Task GenerateFiles()
+    {
+        try
+        {
+            ////////   Input   \\\\\\\\
+            int startNumber = Convert.ToInt32(StartNumberText);
+            int quantity = Convert.ToInt32(QuantityText);
+
+            if (StartNumberText.Length != 8)
+            {
+                StatusMessage = "Start Number must be 8 digits.";
+                return;
+            }
+
+            if (Convert.ToInt32(StartNumberText) < 1)
+            {
+                StatusMessage = "Cannot start lower than 1.";
+                return;
+            }
+
+            ////////   File Naming   \\\\\\\\
+            char prefix = LetterType switch
+            {
+                "Adult" => 'A',
+                "Child" => 'C',
+                "Maxi" => 'M',
+                "Diplomatic" => 'D',
+                "Official" => 'E',
+                "Travel" => 'T',
+                "Refugee" => 'R',
+                "COC" => 'C',
+                "COP" => 'P',
+                _ => ' '
+            };
+
+            string suffix = StartNumberText.Substring(0, 5);
+            int suffixNum = Convert.ToInt32(suffix);
+            string path = "";
+
+
+
+            ////////   File Writing   \\\\\\\\
+            for (int i = 0; i < quantity; i++)
+            {
+                List<string> lines = new();
+                string fileName = $"BATCH {prefix}{suffixNum}";
+                path = Environment.CurrentDirectory + $"\\{fileName}.txt";
+
+                if (startNumber % 1000 == 0)
+                {
+                    lines.Add($"{prefix}{startNumber}");
+                    startNumber++;
+                }
+
+                while (startNumber % 1000 != 0)
+                {
+                    lines.Add($"{prefix}{startNumber}");
+                    startNumber++;
+                    if (startNumber % 1000 == 0)
+                    {
+                        lines.Add($"{prefix}{startNumber}");
+                    }
+                }
+
+                await File.WriteAllLinesAsync(path, lines);
+                suffixNum++;
+                startNumber++;
+            }
+
+            StatusMessage = $"Generated {quantity} file(s) in\n{Environment.CurrentDirectory}.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error: {ex.Message}";
+        }
+
+    }
+}
+
+
+<style>
+    body {
+        background-color: #121212;
+        color: #ffffff;
+        font-family: sans-serif;
+    }
+
+    .form-container {
+        background-color: #1e1e1e;
+        padding: 24px;
+        margin-top: 40px;
+        max-width: 750px;
+        margin-left: auto;
+        margin-right: auto;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .form-title {
+        text-align: center;
+        font-size: 1.8em;
+        margin-bottom: 24px;
+    }
+
+    .form-grid {
+        display: grid;
+        gap: 16px;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 10px;
+        background-color: #2a2a2a;
+        border: 1px solid #444;
+        color: #fff;
+        border-radius: 6px;
+    }
+
+    .form-button {
+        background-color: #007bff;
+        color: #fff;
+        padding: 10px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+        .form-button:hover {
+            background-color: #0056b3;
+        }
+
+    .status-message {
+        background-color: #2e7d32;
+        color: #a5d6a7;
+        padding: 10px;
+        border-radius: 6px;
+    }
+</style>
